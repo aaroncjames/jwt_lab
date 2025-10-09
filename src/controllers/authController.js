@@ -21,7 +21,7 @@ exports.login = async (req, res) => {
 
     res.json({ token });
   } catch (error) {
-    console.error('Login error:', error.message, error.stack); // Your added logging
+    console.error('Login error:', error.message, error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -41,7 +41,7 @@ exports.register = async (req, res) => {
 
     res.status(201).json({ message: 'User registered' });
   } catch (error) {
-    console.error('Register error:', error.message, error.stack); // Add similar logging for consistency
+    console.error('Register error:', error.message, error.stack);
     res.status(500).json({ message: 'Server error' });
   }
 };

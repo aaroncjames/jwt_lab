@@ -2,10 +2,14 @@ const CryptoJS = require('crypto-js');
 
 // Secure-by-default JWT implementation with optional vulnerabilities
 const createJWT = (payload, secret, options = {}) => {
+  console.log('createJWT payload:', payload);
+  console.log('createJWT secret:', secret);
+  console.log('createJWT options:', options);
   const header = {
     alg: options.alg || 'HS256', // Default to HMAC-SHA256
     typ: 'JWT',
   };
+  console.log('Resolved header.alg:', header.alg);
 
   // Set expiration (secure by default)
   const finalPayload = {
@@ -14,8 +18,6 @@ const createJWT = (payload, secret, options = {}) => {
   };
 
   // VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled
-  // Exploit: Attackers can forge tokens by setting alg: 'none' and omitting signature
-  // Expansion: Add support for other weak algorithms (e.g., MD5) or log attempts to use 'none'
   if (global.vulnerabilities.allowNone && options.alg === 'none') {
     header.alg = 'none';
   } else if (options.alg === 'none') {
@@ -23,17 +25,14 @@ const createJWT = (payload, secret, options = {}) => {
   }
 
   // VULNERABILITY: Allow algorithm confusion if --allow-alg-confusion is enabled
-  // Exploit: Attackers can sign tokens with RS256 and use the public key as the HMAC secret
-  // Expansion: Generate RSA key pairs and demonstrate forging tokens with a public key
-  if (global.vulnerabilities.allowAlgConfusion && options.alg !== 'HS256' && options.alg !== 'none') {
+  if (global.vulnerabilities.allowAlgConfusion && options.alg && options.alg !== 'HS256' && options.alg !== 'none') {
     header.alg = options.alg; // Allow other algorithms like RS256
-  } else if (options.alg !== 'HS256') {
+  } else if (options.alg && options.alg !== 'HS256') { // FIX: Only throw if alg is explicitly set
+    console.log('Algorithm check failed: options.alg =', options.alg);
     throw new Error('Only HS256 is allowed unless --allow-alg-confusion is enabled');
   }
 
   // VULNERABILITY: Allow weak secret if --weak-secret is enabled
-  // Exploit: Weak secrets (e.g., 'secret') can be brute-forced
-  // Expansion: Add a dictionary attack script or log weak secret usage
   let finalSecret = secret;
   if (global.vulnerabilities.weakSecret && (!secret || secret.length < 32)) {
     finalSecret = 'secret'; // Default to weak secret

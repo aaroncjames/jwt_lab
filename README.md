@@ -24,6 +24,12 @@ PORT=3000 MONGODB_URI=mongodb://localhost:27017/jwt-auth-demo JWT_SECRET=your_st
   - `node src/app.js --allow-alg-confusion` (allows algorithm confusion)
   - Example: `node src/app.js --allow-none --allow-alg-confusion`
 
+## UI Access
+- Root (`/`): Redirects to `/login`.
+- Login: `http://localhost:4443/login`
+- Register: `http://localhost:4443/register`
+- Profile: `http://localhost:4443/profile` (requires login)
+
 ## Endpoints
 - POST `/api/auth/register` - Register a new user
 - POST `/api/auth/login` - Login and receive a JWT

@@ -16,7 +16,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const payload = { id: user._id };
+    const payload = { email: user.email};
     const token = createJWT(payload, process.env.JWT_SECRET, { expiresIn: 3600 });
 
     res.json({ token });

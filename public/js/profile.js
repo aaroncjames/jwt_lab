@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (response.ok) {
       profileInfo.innerHTML = `
         <p><strong>Message:</strong> ${data.message}</p>
-        <p><strong>User ID:</strong> ${data.user.id}</p>
+        <p><strong>User Email:</strong> ${data.user.email}</p>
         <p><strong>Expiration:</strong> ${new Date(data.user.exp * 1000).toLocaleString()}</p>
       `;
     } else {

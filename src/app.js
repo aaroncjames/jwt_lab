@@ -11,17 +11,25 @@ const app = express();
 
 // Parse command-line arguments
 const argv = yargs
-  .option('allow-none', { type: 'boolean', default: false })
+  .option('no-validation', { type: 'boolean', default: false })
   .option('weak-secret', { type: 'boolean', default: false })
+  .option('allow-none', { type: 'boolean', default: false })
   .option('no-expiration', { type: 'boolean', default: false })
   .option('allow-alg-confusion', { type: 'boolean', default: false })
+  .option('embedded-jku', {type: 'boolean', default: false })
+  .option('embedded-jwk', {type: 'boolean', default: false })
+  .option('embedded-kid', {type: 'boolean', default: false })
   .argv;
 
 global.vulnerabilities = {
-  allowNone: argv['allow-none'],
+  noValidation: argv['no-validation'],
   weakSecret: argv['weak-secret'],
+  allowNone: argv['allow-none'],
   noExpiration: argv['no-expiration'],
   allowAlgConfusion: argv['allow-alg-confusion'],
+  embeddedJku: argv['embedded-jku'],
+  embeddedJwk: argv['embedded-jwk'],
+  embeddedKid: argv['embedded-kid'],
 };
 console.log('Vulnerability settings:', global.vulnerabilities);
 

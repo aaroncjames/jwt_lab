@@ -17,27 +17,29 @@ const createJWT = (payload, secret, options = {}) => {
     exp: Math.floor(Date.now() / 1000) + (options.expiresIn || 3600), // Default 1 hour
   };
 
-  // VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled
+  // 1.) VULNERABILITY: no validation - this won't affect the creation of the JWT, just whether it's validated, so we'll stick with defaults
+
+  // 2.) VULNERABILITY: Allow weak secret if --weak-secret is enabled
+  let finalSecret = secret;
+  if (global.vulnerabilities.weakSecret && (!secret || secret.length < 32)) {
+    finalSecret = 'I LOVE CATS MORE THAN PUPPIES'; // Default to weak secret - also, what kind of psychopath?
+  } else if (!secret || secret.length < 32) {
+    throw new Error('Secret must be at least 32 characters long');
+  }
+  
+  // 3.) VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled
   if (global.vulnerabilities.allowNone && options.alg === 'none') {
-    header.alg = 'none';
+  header.alg = 'none';
   } else if (options.alg === 'none') {
     throw new Error('Algorithm "none" is not allowed unless --allow-none is enabled');
   }
-
+  
   // VULNERABILITY: Allow algorithm confusion if --allow-alg-confusion is enabled
   if (global.vulnerabilities.allowAlgConfusion && options.alg && options.alg !== 'HS256' && options.alg !== 'none') {
     header.alg = options.alg; // Allow other algorithms like RS256
   } else if (options.alg && options.alg !== 'HS256') { // FIX: Only throw if alg is explicitly set
     console.log('Algorithm check failed: options.alg =', options.alg);
     throw new Error('Only HS256 is allowed unless --allow-alg-confusion is enabled');
-  }
-
-  // VULNERABILITY: Allow weak secret if --weak-secret is enabled
-  let finalSecret = secret;
-  if (global.vulnerabilities.weakSecret && (!secret || secret.length < 32)) {
-    finalSecret = 'secret'; // Default to weak secret
-  } else if (!secret || secret.length < 32) {
-    throw new Error('Secret must be at least 32 characters long');
   }
 
   // Base64 encode header and payload

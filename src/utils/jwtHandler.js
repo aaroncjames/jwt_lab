@@ -20,11 +20,9 @@ const createJWT = (payload, secret, options = {}) => {
   // 1.) VULNERABILITY: no validation - this won't affect the creation of the JWT, just whether it's validated, so we'll stick with defaults
 
   // 2.) VULNERABILITY: Allow weak secret if --weak-secret is enabled
-  let finalSecret = secret;
-  if (global.vulnerabilities.weakSecret && (!secret || secret.length < 32)) {
-    finalSecret = 'I LOVE CATS MORE THAN PUPPIES'; // Default to weak secret - also, what kind of psychopath?
-  } else if (!secret || secret.length < 32) {
-    throw new Error('Secret must be at least 32 characters long');
+  if (global.vulnerabilities.weakSecret) {
+    finalSecret = 'supersecret'; // set weak secret
+    // finalSecret = 'sUpErS3Cr3t'; // i'd like to make this discoverable with rules
   }
   
   // 3.) VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled
@@ -53,6 +51,7 @@ const createJWT = (payload, secret, options = {}) => {
   if (header.alg === 'none') {
     signature = ''; // VULNERABILITY: No signature if 'none' algorithm is allowed
   } else {
+    console.log('signing with: %s', finalSecret)
     signature = CryptoJS.HmacSHA256(signatureInput, finalSecret).toString(CryptoJS.enc.Base64url);
   }
 
@@ -91,9 +90,8 @@ const verifyJWT = (token, secret) => {
     // VULNERABILITY: Use weak secret if --weak-secret is enabled
     // Exploit: Weak secrets can be brute-forced
     // Expansion: Simulate a brute-force attack or log signature verification failures
-    const finalSecret = global.vulnerabilities.weakSecret && (!secret || secret.length < 32) ? 'secret' : secret;
-    if (!finalSecret || finalSecret.length < 32) {
-      throw new Error('Secret must be at least 32 characters long');
+    if (global.vulnerabilities.weakSecret) {
+      const finalSecret = global.vulnerabilities.weakSecret;
     }
 
     // Verify signature

@@ -15,18 +15,35 @@ const argv = yargs
   .option('weak-secret', { type: 'boolean', default: false })
   .option('allow-none', { type: 'boolean', default: false })
   .option('no-expiration', { type: 'boolean', default: false })
-  .option('allow-alg-confusion', { type: 'boolean', default: false })
+  .option('alg-confusion', { type: 'boolean', default: false })
   .option('embedded-jku', {type: 'boolean', default: false })
   .option('embedded-jwk', {type: 'boolean', default: false })
   .option('embedded-kid', {type: 'boolean', default: false })
   .argv;
+
+// Validate for conflicts
+function validateArgs(args) {
+  if (args['weak-secret'] && args['alg-confusion']) {
+    throw new Error('Cannot enable both weak HMAC and algorithm confusion – they conflict (symmetric vs. asymmetric signing).');
+  }
+  // Add more conflict checks, e.g.:
+  // if (args['none-algo'] && args['strong-rsa']) { throw new Error('...'); }
+}
+
+// Run validation
+try {
+  validateArgs(argv);
+} catch (error) {
+  console.error('Invalid arguments:', error.message);
+  process.exit(1); // Exit early
+}
 
 global.vulnerabilities = {
   noValidation: argv['no-validation'],
   weakSecret: argv['weak-secret'],
   allowNone: argv['allow-none'],
   noExpiration: argv['no-expiration'],
-  allowAlgConfusion: argv['allow-alg-confusion'],
+  algConfusion: argv['allow-alg-confusion'],
   embeddedJku: argv['embedded-jku'],
   embeddedJwk: argv['embedded-jwk'],
   embeddedKid: argv['embedded-kid'],

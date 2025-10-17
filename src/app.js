@@ -11,14 +11,10 @@ const app = express();
 
 // Parse command-line arguments
 const argv = yargs
-  .option('disable-validation', {
-    type: 'boolean',
-    default: false,
-    description: 'Flawed validation of JWT signatures'
-  })
-  .option('weak-secret', { type: 'boolean', default: false })
-  .option('allow-none', { type: 'boolean', default: false })
-  .option('disable-expiration', { type: 'boolean', default: false })
+  .option('disable-validation', { type: 'boolean', default: false, description: 'Disable validation of JWT signatures' })
+  .option('weak-secret', { type: 'boolean', default: false, description: 'Sign tokens with weak secret' })
+  .option('allow-none', { type: 'boolean', default: false, description: 'Allow the use of the none algorithm' })
+  .option('disable-expiration', { type: 'boolean', default: false, description: 'Skip validating exp claim' })
   .option('alg-confusion', { type: 'boolean', default: false })
   .option('embedded-jku', {type: 'boolean', default: false })
   .option('embedded-jwk', {type: 'boolean', default: false })

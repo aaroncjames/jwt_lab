@@ -19,13 +19,15 @@ const createJWT = (payload, secret, options = {}) => {
 
   // 1.) VULNERABILITY: no validation - this won't affect the creation of the JWT, just whether it's validated, so we'll stick with defaults
 
-  // 2.) VULNERABILITY: Allow weak secret if --weak-secret is enabled
+  // 2.) VULNERABILITY: Allow weak secret if --weak-secret is enabled (WORKING AS EXPECTED)
   if (global.vulnerabilities.weakSecret) {
     finalSecret = 'supersecret'; // set weak secret
     // finalSecret = 'sUpErS3Cr3t'; // i'd like to make this discoverable with rules
+  } else {
+    finalSecret = secret;
   }
   
-  // 3.) VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled
+  // 3.) VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled (WORKING AS EXPECTED)
   if (global.vulnerabilities.allowNone && options.alg === 'none') {
   header.alg = 'none';
   } else if (options.alg === 'none') {
@@ -47,7 +49,7 @@ const createJWT = (payload, secret, options = {}) => {
   // Create signature
   const signatureInput = `${encodedHeader}.${encodedPayload}`;
   let signature;
-
+  console.log(header.alg)
   if (header.alg === 'none') {
     signature = ''; // VULNERABILITY: No signature if 'none' algorithm is allowed
   } else {
@@ -66,6 +68,12 @@ const verifyJWT = (token, secret) => {
     const header = JSON.parse(Buffer.from(encodedHeader, 'base64url').toString());
     const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString());
 
+    // 1.) VULNERABILITY: no validation
+    // TO DO: it would be cool to have absolutely no validation, and validation of only signature length and/or char set
+    if (global.vulnerabilities.disableValidation){
+      return payload;
+    }
+
     // VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled
     // Exploit: Attackers can submit unsigned tokens
     // Expansion: Add logging to detect 'none' algorithm usage or test with forged tokens
@@ -83,7 +91,7 @@ const verifyJWT = (token, secret) => {
     // VULNERABILITY: Skip expiration check if --no-expiration is enabled
     // Exploit: Tokens never expire, enabling replay attacks
     // Expansion: Store tokens in a database to demonstrate replay attacks or add revocation
-    if (!global.vulnerabilities.noExpiration && payload.exp < Math.floor(Date.now() / 1000)) {
+    if (!global.vulnerabilities.disableValidation && payload.exp < Math.floor(Date.now() / 1000)) {
       throw new Error('Token expired');
     }
 

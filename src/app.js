@@ -11,10 +11,14 @@ const app = express();
 
 // Parse command-line arguments
 const argv = yargs
-  .option('no-validation', { type: 'boolean', default: false })
+  .option('disable-validation', {
+    type: 'boolean',
+    default: false,
+    description: 'Flawed validation of JWT signatures'
+  })
   .option('weak-secret', { type: 'boolean', default: false })
   .option('allow-none', { type: 'boolean', default: false })
-  .option('no-expiration', { type: 'boolean', default: false })
+  .option('disable-expiration', { type: 'boolean', default: false })
   .option('alg-confusion', { type: 'boolean', default: false })
   .option('embedded-jku', {type: 'boolean', default: false })
   .option('embedded-jwk', {type: 'boolean', default: false })
@@ -39,11 +43,11 @@ try {
 }
 
 global.vulnerabilities = {
-  noValidation: argv['no-validation'],
+  disableValidation: argv['disable-validation'],
   weakSecret: argv['weak-secret'],
   allowNone: argv['allow-none'],
-  noExpiration: argv['no-expiration'],
-  algConfusion: argv['allow-alg-confusion'],
+  disableExpiration: argv['disable-expiration'],
+  algConfusion: argv['alg-confusion'],
   embeddedJku: argv['embedded-jku'],
   embeddedJwk: argv['embedded-jwk'],
   embeddedKid: argv['embedded-kid'],

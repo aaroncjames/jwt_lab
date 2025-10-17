@@ -15,7 +15,7 @@ const argv = yargs
   .option('weak-secret', { type: 'boolean', default: false, description: 'Sign tokens with weak secret' })
   .option('allow-none', { type: 'boolean', default: false, description: 'Allow the use of the none algorithm' })
   .option('disable-expiration', { type: 'boolean', default: false, description: 'Skip validating exp claim' })
-  .option('alg-confusion', { type: 'boolean', default: false })
+  .option('alg-confusion', { type: 'boolean', default: false, description: 'Validate tokens with public HMAC key'})
   .option('embedded-jku', {type: 'boolean', default: false })
   .option('embedded-jwk', {type: 'boolean', default: false })
   .option('embedded-kid', {type: 'boolean', default: false })

@@ -1,4 +1,4 @@
-const CryptoJS = require('crypto-js');
+const crypto = require("crypto");
 
 // Secure-by-default JWT implementation with optional vulnerabilities
 const createJWT = (payload, secret, options = {}) => {
@@ -37,7 +37,7 @@ const createJWT = (payload, secret, options = {}) => {
   // VULNERABILITY: Allow algorithm confusion if --allow-alg-confusion is enabled
   if (global.vulnerabilities.allowAlgConfusion && options.alg && options.alg !== 'HS256' && options.alg !== 'none') {
     header.alg = options.alg; // Allow other algorithms like RS256
-  } else if (options.alg && options.alg !== 'HS256') { // FIX: Only throw if alg is explicitly set
+  } else if (options.alg && options.alg !== 'HS256') { // FIX: Only throw if alg is explicitly set 
     console.log('Algorithm check failed: options.alg =', options.alg);
     throw new Error('Only HS256 is allowed unless --allow-alg-confusion is enabled');
   }
@@ -54,7 +54,7 @@ const createJWT = (payload, secret, options = {}) => {
     signature = ''; // VULNERABILITY: No signature if 'none' algorithm is allowed
   } else {
     console.log('signing with: %s', finalSecret)
-    signature = CryptoJS.HmacSHA256(signatureInput, finalSecret).toString(CryptoJS.enc.Base64url);
+    signature = crypto.createHmac("sha256", finalSecret).update(signatureInput).digest("base64url");
   }
 
   return `${encodedHeader}.${encodedPayload}.${signature}`;
@@ -104,7 +104,7 @@ const verifyJWT = (token, secret) => {
 
     // Verify signature
     const signatureInput = `${encodedHeader}.${encodedPayload}`;
-    const computedSignature = CryptoJS.HmacSHA256(signatureInput, finalSecret).toString(CryptoJS.enc.Base64url);
+    const computedSignature = crypto.createHmac("sha256", finalSecret).update(signatureInput).digest("base64url");
 
     if (computedSignature !== signature) {
       throw new Error('Invalid signature');

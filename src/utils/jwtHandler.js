@@ -1,7 +1,18 @@
+const fs = require("fs");
 const crypto = require("crypto");
 
+// Load RSA keys
+const privateKey = fs.readFileSync("./keys/private.pem", "utf8");
+const publicKey = fs.readFileSync("./keys/public.pem", "utf8");
+
 // Secure-by-default JWT implementation with optional vulnerabilities
-const createJWT = (payload, secret, options = {}) => {
+const secret = process.env.JWT_SECRET // symmetric key stored in .env
+console.log('secret:', secret);
+const options = { 
+  expiresIn: 3600
+}
+
+const createJWT = (payload) => {
   console.log('createJWT payload:', payload);
   console.log('createJWT secret:', secret);
   console.log('createJWT options:', options);
@@ -28,18 +39,11 @@ const createJWT = (payload, secret, options = {}) => {
   }
   
   // 3.) VULNERABILITY: Allow 'none' algorithm if --allow-none is enabled (WORKING AS EXPECTED)
-  if (global.vulnerabilities.allowNone && options.alg === 'none') {
-  header.alg = 'none';
-  } else if (options.alg === 'none') {
-    throw new Error('Algorithm "none" is not allowed unless --allow-none is enabled');
-  }
+  // sign with HS256, the vulnerabilitiy is in the verification
   
   // VULNERABILITY: Allow algorithm confusion if --allow-alg-confusion is enabled
-  if (global.vulnerabilities.allowAlgConfusion && options.alg && options.alg !== 'HS256' && options.alg !== 'none') {
-    header.alg = options.alg; // Allow other algorithms like RS256
-  } else if (options.alg && options.alg !== 'HS256') { // FIX: Only throw if alg is explicitly set 
-    console.log('Algorithm check failed: options.alg =', options.alg);
-    throw new Error('Only HS256 is allowed unless --allow-alg-confusion is enabled');
+  if (global.vulnerabilities.allowAlgConfusion) {
+    header.alg = 'RS256'; // Create the JWT with RS256
   }
 
   // Base64 encode header and payload
@@ -52,9 +56,11 @@ const createJWT = (payload, secret, options = {}) => {
   console.log(header.alg)
   if (header.alg === 'none') {
     signature = ''; // VULNERABILITY: No signature if 'none' algorithm is allowed
-  } else {
+  } else if (header.alg === 'HS256') {
     console.log('signing with: %s', finalSecret)
     signature = crypto.createHmac("sha256", finalSecret).update(signatureInput).digest("base64url");
+  } else if (header.alg === 'RS256') {
+    signature = crypto.createSign("RSA-SHA256").update(signatureInput).sign(privateKey, "base64");
   }
 
   return `${encodedHeader}.${encodedPayload}.${signature}`;
@@ -83,9 +89,8 @@ const verifyJWT = (token, secret) => {
 
     // VULNERABILITY: Allow algorithm confusion if --allow-alg-confusion is enabled
     // Exploit: Attackers can use a public key as the HMAC secret for RS256-signed tokens
-    // Expansion: Simulate RS256 signing with a public key and test verification
-    if (!global.vulnerabilities.allowAlgConfusion && header.alg !== 'HS256') {
-      throw new Error('Invalid algorithm: Only HS256 is allowed');
+    if (global.vulnerabilities.allowAlgConfusion) {
+      // use public key to verify token
     }
 
     // VULNERABILITY: Skip expiration check if --no-expiration is enabled

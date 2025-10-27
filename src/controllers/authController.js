@@ -17,7 +17,7 @@ exports.login = async (req, res) => {
     }
 
     const payload = { email: user.email};
-    const token = createJWT(payload, process.env.JWT_SECRET, { expiresIn: 3600 });
+    const token = createJWT(payload);
 
     res.json({ token });
   } catch (error) {

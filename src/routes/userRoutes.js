@@ -1,8 +1,13 @@
+// src/routes/user.js
 const express = require('express');
 const router = express.Router();
-const userController = require('../controllers/userController');
-const { authMiddleware } = require('../middleware/authMiddleware');
+const auth = require('../middleware/authMiddleware');  // Your middleware
+const { getProfile } = require('../controllers/authController');  // ← Import here
 
-router.get('/profile', authMiddleware, userController.getProfile);
+// Temp debug: Log if getProfile loaded
+console.log('🔍 Imported getProfile type:', typeof getProfile);  // Should be 'function'
 
-module.exports = router;
+// Protected route
+router.get('/profile', auth, getProfile);  // ← If getProfile undefined → error
+
+module.exports = router;  // Export the router

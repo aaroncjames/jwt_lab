@@ -20,8 +20,8 @@ module.exports = async function (req, res, next) {  // Make async for await veri
     if (!payload.sub) {
       throw new Error('No user ID (sub) in JWT payload');
     }
-    req.user = { id: payload.sub };  // Attach as string for Mongoose
-    console.log('✅ Attached req.user.id:', req.user.id);  // Temp log
+    req.user = payload;  // Attach as string for Mongoose
+    console.log('✅ Attached req.user:', req.user);  // Temp log
 
     next();
   } catch (err) {

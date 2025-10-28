@@ -61,29 +61,6 @@ exports.login = async (req, res) => {
 };
 
 // -----------------------------------------------------------------
-// Profile – THIS WAS MISSING FROM EXPORTS
-// -----------------------------------------------------------------
-exports.getProfile = async (req, res) => {
-  console.log('getProfile called – req.user:', req.user); // DEBUG
-
-  try {
-    if (!req.user?.id) {
-      return res.status(401).json({ message: 'Unauthenticated' });
-    }
-
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json(user);
-  } catch (err) {
-    console.error('Profile error:', err);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// -----------------------------------------------------------------
 // OPTIONAL: sanity‑check at module load time
 // -----------------------------------------------------------------
 console.log('authController loaded – exports:', Object.keys(exports));

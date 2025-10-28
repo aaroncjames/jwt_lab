@@ -13,18 +13,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     const data = await response.json();
-
+    console.log("just called profile")
     if (response.ok) {
       profileInfo.innerHTML = `
         <p><strong>Message:</strong> ${data.message}</p>
         <p><strong>User Email:</strong> ${data.user.email}</p>
-        <p><strong>Expiration:</strong> ${new Date(data.user.exp * 1000).toLocaleString()}</p>
+        <p><strong>Expiration:</strong> ${data.user.expiresAt}</p>
       `;
     } else {
       alertMessage.innerHTML = `<div class="alert alert-danger">${data.message || 'Failed to load profile'}</div>`;
     }
   } catch (error) {
     alertMessage.innerHTML = '<div class="alert alert-danger">Error connecting to server</div>';
+    console.log(error)
   }
 });
 

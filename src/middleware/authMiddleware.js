@@ -1,17 +1,31 @@
-const { verifyJWT } = require('../utils/jwtHandler');
+// src/middleware/auth.js
+const { verifyJWT } = require('../utils/jwtHandler');  // Your custom one
 
-exports.authMiddleware = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+module.exports = async function (req, res, next) {  // Make async for await verifyJWT
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.status(401).json({ message: 'No token, authorization denied' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('❌ Missing Bearer header');  // Temp log
+    return res.status(401).json({ message: 'Missing or invalid Authorization header' });
   }
 
+  const token = authHeader.split('Bearer ')[1];  // Fix: space after Bearer
+
   try {
-    const decoded = verifyJWT(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    console.log('🔍 Verifying token...');  // Temp log
+    const payload = await verifyJWT(token);  // Await our async custom func
+    console.log('✅ Payload claims:', payload);  // Temp: See sub, iat, exp, etc.
+
+    // FIX: Use 'sub' (JWT standard) instead of 'id'
+    if (!payload.sub) {
+      throw new Error('No user ID (sub) in JWT payload');
+    }
+    req.user = { id: payload.sub };  // Attach as string for Mongoose
+    console.log('✅ Attached req.user.id:', req.user.id);  // Temp log
+
     next();
-  } catch (error) {
-    res.status(401).json({ message: `Token is not valid: ${error.message}` });
+  } catch (err) {
+    console.error('💥 JWT verification failed:', err.message);  // Better logging
+    return res.status(401).json({ message: 'Invalid token', error: err.message });
   }
 };

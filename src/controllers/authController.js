@@ -17,7 +17,8 @@ exports.login = async (req, res) => {
     }
 
     const payload = { email: user.email};
-    const token = createJWT(payload);
+    const token = await createJWT(payload, 3600);
+    console.log('JWT:', token);
 
     res.json({ token });
   } catch (error) {
@@ -42,6 +43,16 @@ exports.register = async (req, res) => {
     res.status(201).json({ message: 'User registered' });
   } catch (error) {
     console.error('Register error:', error.message, error.stack);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
 };

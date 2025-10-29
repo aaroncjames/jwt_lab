@@ -6,9 +6,6 @@
    const fs    = require('fs');
    const path  = require('path');
    
-   /* -------------------------- CONFIG --------------------------- */
-   const vuln = global.vulnerabilities || {};
-   
    const PRIV_PATH = path.resolve(__dirname, '../../certs/private.pem');
    const PUB_PATH  = path.resolve(__dirname, '../../certs/public.pem');
    
@@ -25,13 +22,11 @@
     const iat = Math.floor(Date.now() / 1000);
     const exp = iat + expiresInSeconds;
     const claims = { ...rawPayload, iat, exp };
-   
+
      // HS256 only when a vuln flag demands it
-     if (vuln.forceHS256 || vuln.weakSecret) {
-       return { alg: 'HS256', key: Buffer.from(vuln.weakSecret ? 'secret' : process.env.JWT_SECRET || 'fallback'), claims };
-     }
-     if (vuln.allowAlgConfusion && payload.alg === 'HS256') {
-       return { alg: 'HS256', key: Buffer.from(process.env.JWT_SECRET || 'fallback'), claims };
+     if (global.vulnerabilities.weakSecret) {
+       console.log('using weak secret') // temporary debug
+       return { alg: 'HS256', key: Buffer.from(global.vulnerabilities.weakSecret ? process.env.JWT_SECRET_WEAK : process.env.JWT_SECRET || 'fallback'), claims };
      }
      // DEFAULT: RS256
      return { alg: 'RS256', key: getPriv(), claims };
@@ -43,6 +38,7 @@
      const data = `${h}.${p}`;
    
      let sig;
+     console.log('using alg:', alg) // temporary debug
      if (alg === 'HS256') {
        sig = b64url(crypto.createHmac('sha256', key).update(data).digest());
      } else {
@@ -61,21 +57,39 @@
   }
    
    /* -------------------------- VERIFY -------------------------- */
-   function verificationConfig(header) {
-     const alg = header.alg ?? 'RS256';
+  function verificationConfig(header) {
+    const alg = header.alg ?? 'RS256';
    
-     if (vuln.allowNoneAlgorithm && alg === 'none') return { skipSig: true };
+    if (global.vulnerabilities.allowNone && alg === 'none') return { skipSig: true };
    
-     if (vuln.allowAlgConfusion && alg === 'HS256') {
-       const pub = getPub().replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g, '');
-       return { alg: 'HS256', key: Buffer.from(pub, 'base64') };
-     }
+     // THIS WAS ORIGINAL ALG CONFUSION CODE - SAVING FOR REFERENCE
+     //if (global.vulnerabilities.allowAlgConfusion && alg === 'HS256') {
+     //  const pub = getPub().replace(/-----BEGIN PUBLIC KEY-----|-----END PUBLIC KEY-----|\s/g, '');
+     //  return { alg: 'HS256', key: Buffer.from(pub, 'base64') };
+     //}
+
+    if (alg === 'HS256') {
+      let key;
+  
+      if (global.vulnerabilities.allowAlgConfusion) {
+        key = getPub();                                          // Option 3
+      } else if (global.vulnerabilities.weakSecret) {
+        key = process.env.JWT_SECRET_WEAK || 'secret';           // Option 2
+      } else {
+        key = process.env.JWT_SECRET || 'fallback-strong';       // Option 1
+      }
+  
+      const finalKey = typeof key === 'string' ? Buffer.from(key) : key;
+      return { alg: 'HS256', key: finalKey };
+    }
    
      if (alg === 'RS256') return { alg: 'RS256', key: getPub() };
-     if (alg === 'HS256') return { alg: 'HS256', key: Buffer.from(process.env.JWT_SECRET || 'fallback') };
+     
+     // THIS WAS ORIGINAL HS256 HANDLING - SAVING FOR REFERENCE
+     // if (alg === 'HS256') return { alg: 'HS256', key: Buffer.from(process.env.JWT_SECRET || 'fallback') };
    
      throw new Error(`Unsupported alg ${alg}`);
-   }
+  }
    
    function verifySignature(parts, { alg, key, skipSig }) {
      const [h, p, s] = parts;
@@ -85,6 +99,7 @@
      const sig = Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
    
      if (alg === 'HS256') {
+        console.log('key:', key);
        const expected = crypto.createHmac('sha256', key).update(data).digest();
        return crypto.timingSafeEqual(expected, sig);
      }
@@ -107,11 +122,19 @@
      if (!ok) throw new Error('Invalid signature');
    
      const now = Math.floor(Date.now() / 1000);
-     if (!vuln.skipExpiration && payload.exp && payload.exp < now) throw new Error('Expired');
-     if (!vuln.skipIssuedAt && payload.iat && payload.iat > now + 60) throw new Error('Future token');
+     if (!global.vulnerabilities.disableExpiration && payload.exp && payload.exp < now) throw new Error('Expired');
+     if (!global.vulnerabilities.skipIssuedAt && payload.iat && payload.iat > now + 60) throw new Error('Future token');
    
      return payload;
    }
+
+   function decodeJWT(token) {
+    const [headerB64, payloadB64] = token.split('.');
+    if (!payloadB64) throw new Error('Invalid token format');
+  
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+    return payload;
+  }
    
    /* -------------------------- EXPORT -------------------------- */
-   module.exports = { createJWT, verifyJWT };
+   module.exports = { createJWT, verifyJWT, decodeJWT};

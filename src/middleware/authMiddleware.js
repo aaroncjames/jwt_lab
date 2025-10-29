@@ -1,31 +1,38 @@
 // src/middleware/auth.js
-const { verifyJWT } = require('../utils/jwtHandler');  // Your custom one
+const { verifyJWT, decodeJWT } = require('../utils/jwtHandler');  // ← Add decodeJWT
 
-module.exports = async function (req, res, next) {  // Make async for await verifyJWT
+module.exports = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    console.log('❌ Missing Bearer header');  // Temp log
-    return res.status(401).json({ message: 'Missing or invalid Authorization header' });
+  if (!authHeader?.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Missing token' });
   }
 
-  const token = authHeader.split('Bearer ')[1];  // Fix: space after Bearer
+  const token = authHeader.split(' ')[1];
+  const vuln = global.vulnerabilities || {};
 
   try {
-    console.log('🔍 Verifying token...');  // Temp log
-    const payload = await verifyJWT(token);  // Await our async custom func
-    console.log('✅ Payload claims:', payload);  // Temp: See sub, iat, exp, etc.
+    let payload;
 
-    // FIX: Use 'sub' (JWT standard) instead of 'id'
+    if (vuln.disableValidation) {
+      console.log('⚠️  --disable-validation: SKIPPING signature check');
+      payload = decodeJWT(token);  // ← Only decode, no verify
+    } else {
+      console.log('Verifying token...');
+      payload = await verifyJWT(token);  // ← Full verify
+    }
+
+    console.log('Payload claims:', payload);
+
     if (!payload.sub) {
       throw new Error('No user ID (sub) in JWT payload');
     }
-    req.user = payload;  // Attach as string for Mongoose
-    console.log('✅ Attached req.user:', req.user);  // Temp log
+
+    req.user = payload;
+    console.log('Attached req.user:', req.user);
 
     next();
   } catch (err) {
-    console.error('💥 JWT verification failed:', err.message);  // Better logging
+    console.error('JWT failed:', err.message);
     return res.status(401).json({ message: 'Invalid token', error: err.message });
   }
 };

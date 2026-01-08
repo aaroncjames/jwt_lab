@@ -1,98 +1,153 @@
-# JWT Auth Demo (Secure-by-Default with Individual Vulnerability Flags)
+# JWT Auth Demo – Vulnerable by Design
 
-A Node.js application demonstrating a secure-by-default JWT system with specific vulnerabilities enabled via command-line flags (`--allow-none`, `--weak-secret`, `--no-expiration`, `--allow-alg-confusion`) for educational purposes.
+## Overview
+
+This project is a deliberately vulnerable JWT-based authentication application intended for **security training and experimentation**.
+
+It demonstrates a variety of **real-world JWT implementation flaws**, including algorithm confusion, weak secrets, header injection attacks, and improper validation behavior.  
+The application is designed to be run either **locally** or via **Docker Compose**.
+
+> ⚠️ **Warning:** This application is intentionally insecure.  
+> Do **not** deploy it in production or expose it to untrusted networks.
+
+---
 
 ## Features
-- User registration and login with custom JWT implementation
-- Protected profile route
-- MongoDB for user storage
-- Secure JWT handling by default (HMAC-SHA256, expiration checks, strong secret)
-- Individual vulnerability toggles for educational demos
 
-## Setup
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Set up MongoDB locally or use a cloud instance
-4. Create a `.env` file with:
-PORT=3000 MONGODB_URI=mongodb://localhost:27017/jwt-auth-demo JWT_SECRET=your_strong_jwt_secret_key_here_32_chars_minimum
-5. Run the application:
-- Secure mode: `npm start` or `node src/app.js`
-- Vulnerable modes (combine as needed):
-  - `node src/app.js --allow-none` (allows 'none' algorithm)
-  - `node src/app.js --weak-secret` (allows weak secret)
-  - `node src/app.js --no-expiration` (skips expiration checks)
-  - `node src/app.js --allow-alg-confusion` (allows algorithm confusion)
-  - Example: `node src/app.js --allow-none --allow-alg-confusion`
+- Node.js + Express authentication API
+- MongoDB-backed user storage
+- Custom JWT implementation (no third-party JWT libraries)
+- Toggleable vulnerabilities via command-line flags
+- JWKS endpoint (`/.well-known/jwks.json`)
+- Dockerized for easy setup
 
-## UI Access
-- Root (`/`): Redirects to `/login`.
-- Login: `http://localhost:4443/login`
-- Register: `http://localhost:4443/register`
-- Profile: `http://localhost:4443/profile` (requires login)
+---
 
-## Endpoints
-- POST `/api/auth/register` - Register a new user
-- POST `/api/auth/login` - Login and receive a JWT
-- GET `/api/user/profile` - Access protected profile (requires JWT in Authorization header)
+## Vulnerabilities Implemented
 
-## Secure-by-Default Features
-- Uses HMAC-SHA256 for signing
-- Enforces token expiration (1 hour by default)
-- Requires a strong secret (minimum 32 characters)
-- Validates algorithm (rejects 'none' and non-HS256)
+The application supports enabling or disabling vulnerabilities at runtime using command-line flags.
 
-## Vulnerabilities (Enabled Individually)
-The `src/utils/jwtHandler.js` file supports the following vulnerabilities when enabled:
-- **'none' Algorithm** (`--allow-none`):
-- **Description**: Allows tokens with no signature.
-- **Exploit**: Forge tokens by setting `alg: 'none'` and omitting the signature.
-- **Expansion**: Add tests to submit forged tokens or log unauthorized access attempts.
-- **Weak Secret** (`--weak-secret`):
-- **Description**: Falls back to a weak secret ('secret') if none provided or too short.
-- **Exploit**: Brute-force the secret to forge or decode tokens.
-- **Expansion**: Implement a brute-force attack script or use a dictionary attack.
-- **No Expiration Check** (`--no-expiration`):
-- **Description**: Skips token expiration validation.
-- **Exploit**: Replay old tokens to gain unauthorized access.
-- **Expansion**: Store tokens in a database to demonstrate replay attacks or add revocation.
-- **Algorithm Confusion** (`--allow-alg-confusion`):
-- **Description**: Allows tokens signed with non-HS256 algorithms (e.g., RS256) without validation.
-- **Exploit**: Sign a token with RS256 using a public key, then use that public key as the HMAC secret.
-- **Expansion**: Generate RSA key pairs and demonstrate forging tokens with a public key.
+| Flag | Description |
+|----|----|
+| `--disable-validation` | Skips JWT signature verification entirely |
+| `--allow-none` | Accepts unsigned tokens using `alg: none` |
+| `--weak-secret` | Signs and validates tokens with a weak HMAC secret |
+| `--alg-confusion` | Allows RSA public key to be misused as an HMAC secret |
+| `--kid-injection` | Allows `kid` path traversal to load HMAC secrets from disk |
+| `--jku-injection` | Allows attacker-controlled remote JWKS via `jku` header |
+| `--jwk-injection` | Allows embedded `jwk` header to supply verification key |
 
-## Educational Experiments
-To expand on vulnerabilities:
-- **Algorithm Confusion**: Use a tool like `jwt.io` to create an RS256-signed token and test verification with the public key as the secret.
-- **Weak Hashing**: Replace HMAC-SHA256 with a weaker algorithm (e.g., MD5) in `jwtHandler.js`.
-- **Token Leakage**: Simulate logging sensitive token data to demonstrate information disclosure.
-- **No Secret Validation**: Allow shorter secrets in `verifyJWT` to test weaker configurations.
+> Multiple flags may be combined unless explicitly disallowed.
 
-## Fixes to Implement
-- Add refresh tokens to reduce long-lived token risks.
-- Implement token revocation (e.g., blacklist in MongoDB).
-- Enforce stricter algorithm validation.
-- Use environment-specific secrets (e.g., different secrets for dev/prod).
+---
 
-## Usage
-1. Register: `POST /api/auth/register` with `{ "email": "user@example.com", "password": "password123" }`
-2. Login: `POST /api/auth/login` with the same credentials
-3. Access profile: `GET /api/user/profile` with header `Authorization: Bearer <token>`
+## Architecture Overview
 
-## Testing Vulnerabilities
-1. **'none' Algorithm**:
-- Start: `node src/app.js --allow-none`
-- Modify `authController.js` to pass `{ alg: 'none' }` to `createJWT`.
-- Test accessing `/api/user/profile` with the unsigned token.
-2. **Weak Secret**:
-- Start: `node src/app.js --weak-secret`
-- Set `JWT_SECRET=secret` in `.env` or omit it.
-- Attempt to brute-force the secret using a script.
-3. **No Expiration**:
-- Start: `node src/app.js --no-expiration`
-- Generate a token, wait past its expiration, and try reusing it.
-4. **Algorithm Confusion**:
-- Start: `node src/app.js --allow-alg-confusion`
-- Generate an RS256-signed token (e.g., using `jwt.io` or a script) with a public key.
-- Set `JWT_SECRET` to the public key and test accessing `/api/user/profile`.
+- **Backend:** Node.js / Express
+- **Database:** MongoDB
+- **Auth:** Custom JWT handler (`utils/jwtHandler.js`)
+- **Key Material:** RSA keys stored in `certs/`
+- **Deployment:** Docker + Docker Compose
 
-This project is for educational purposes only. Do not use in production.
+---
+
+## Prerequisites
+
+### For Local Runs
+- Node.js (v18+ recommended)
+- MongoDB running locally
+- npm or yarn
+
+### For Docker Runs
+- Docker
+- Docker Compose (v2+)
+
+---
+
+## Installation
+
+### Clone the Repository
+```bash
+git clone https://github.com/yourusername/jwt-auth-demo.git
+cd jwt-auth-demo
+```
+Configuration
+
+Environment variables are required to run the application.
+
+Create an Environment File
+cp .env.example .env
+
+
+Edit .env as needed.
+
+.env, .env.local, and .env.docker are intentionally gitignored.
+
+Running the Application
+Option 1: Run Locally
+
+Ensure MongoDB is running locally
+
+Set MONGODB_URI to localhost in .env
+
+Start the app:
+
+node app.js --alg-confusion
+
+Option 2: Run with Docker (Recommended)
+
+Ensure MONGODB_URI is set to mongo in .env
+
+Build and run:
+
+docker compose up --build
+
+
+Access the app:
+
+http://localhost:4443
+
+JWT Debugging
+
+JWT debugging output can be enabled by setting:
+
+DEBUG_JWT=true
+
+
+This will print detailed verification and key-selection logs to the console.
+
+Usage Notes
+
+Tokens are issued on login
+
+Protected routes require an Authorization: Bearer <token> header
+
+Vulnerabilities only activate when their corresponding flags are enabled
+
+Some attacks require crafting tokens manually (e.g., Burp Suite JWT Editor)
+
+Educational Goals
+
+This project is intended to help learners:
+
+Understand how JWTs actually work under the hood
+
+Identify common JWT implementation mistakes
+
+Practice exploiting JWT vulnerabilities in a controlled environment
+
+Learn how configuration and deployment affect security
+
+Non-Goals
+
+Production-ready security
+
+Hardened authentication
+
+OAuth / OpenID Connect compliance
+
+Disclaimer
+
+This software is provided for educational purposes only.
+
+The author assumes no responsibility for misuse of this code or any damages resulting from its use.

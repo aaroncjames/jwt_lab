@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: jwt-lab-app
+    ports:
+      - "4443:4443"
+    env_file:
+      - .env
+    depends_on:
+      - mongo
+    command: >
+      node src/app.js
+      --alg-confusion
+      --jku-injection
+      --jwk-injection
+      --kid-injection
+      --x5u-injection
+      --allow-none
+      --disable-validation
+    networks:
+      - jwtlab
+
+  mongo:
+    image: mongo:7
+    container_name: jwt-lab-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - jwtlab
+
+volumes:
+  mongo_data:
+
+networks:
+  jwtlab:
+    driver: bridge
+

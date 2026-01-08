@@ -6,6 +6,8 @@ const path = require('path');
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const { getJWKS } = require('./utils/jwtHandler');
+
 
 const app = express();
 
@@ -16,9 +18,10 @@ const argv = yargs
   .option('allow-none', { type: 'boolean', default: false, description: 'Allow the use of the none algorithm' })
   .option('disable-expiration', { type: 'boolean', default: false, description: 'Skip validating exp claim' })
   .option('alg-confusion', { type: 'boolean', default: false, description: 'Validate tokens with public HMAC key'})
-  .option('embedded-jku', {type: 'boolean', default: false })
-  .option('embedded-jwk', {type: 'boolean', default: false })
-  .option('embedded-kid', {type: 'boolean', default: false })
+  .option('jku-injection', {type: 'boolean', default: false, description: 'Validate tokens with remote JWKS'})
+  .option('jwk-injection', {type: 'boolean', default: false, description: 'Validate tokens with embedded JWKS' })
+  .option('kid-injection', {type: 'boolean', default: false, description: 'Load a key via kid path traversal' })
+  .option('x5u-injection', {type: 'boolean', default: false, description: 'Validate tokens with remote PEM' })
   .argv;
 
 // Validate for conflicts
@@ -44,9 +47,10 @@ global.vulnerabilities = {
   allowNone: argv['allow-none'],
   disableExpiration: argv['disable-expiration'],
   algConfusion: argv['alg-confusion'],
-  embeddedJku: argv['embedded-jku'],
-  embeddedJwk: argv['embedded-jwk'],
-  embeddedKid: argv['embedded-kid'],
+  jkuInjection: argv['jku-injection'],
+  jwkInjection: argv['jwk-injection'],
+  kidInjection: argv['kid-injection'],
+  x5uInjection: argv['x5u-injection'],
 };
 console.log('Vulnerability settings:', global.vulnerabilities);
 
@@ -75,6 +79,9 @@ app.get('/profile', (req, res) => {
   console.log('Serving profile.html from:', path.join(__dirname, '../public/profile.html'));
   res.sendFile(path.join(__dirname, '../public/profile.html'));
 });
+app.get('/.well-known/jwks.json', (req, res) => {
+  res.json(getJWKS());
+});
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -82,5 +89,5 @@ app.use('/api/user', userRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running: http://127.0.0.1:${PORT}`);
 });

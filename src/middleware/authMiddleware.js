@@ -21,14 +21,12 @@ module.exports = async (req, res, next) => {
       payload = await verifyJWT(token);  // ← Full verify
     }
 
-    console.log('Payload claims:', payload);
-
     if (!payload.sub) {
       throw new Error('No user ID (sub) in JWT payload');
     }
 
     req.user = payload;
-    console.log('Attached req.user:', req.user);
+    console.log('JWT Payload:', req.user);
 
     next();
   } catch (err) {

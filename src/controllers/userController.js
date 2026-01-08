@@ -1,10 +1,13 @@
-
+const DEBUG_JWT = process.env.DEBUG_JWT === 'true';
+function debug(...args) {
+  if (DEBUG_JWT) console.log('[JWT DEBUG]', ...args);
+}
 
 exports.getProfile = async (req, res) => {
-  console.log('FULL req.user object:', req.user);
-  console.log('req.user keys:', Object.keys(req.user));
-  console.log('req.user.email:', req.user.email); 
-  console.log('getProfile – req.user:', req.user);
+  debug('FULL req.user object:', req.user);
+  debug('req.user keys:', Object.keys(req.user));
+  debug('req.user.email:', req.user.email); 
+  debug('getProfile – req.user:', req.user);
 
   const { id, email, exp, iat } = req.user;
 

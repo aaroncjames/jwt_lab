@@ -10,7 +10,6 @@ exports.register = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Basic validation (you can expand)
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password required' });
     }
@@ -59,8 +58,3 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-// -----------------------------------------------------------------
-// OPTIONAL: sanity‑check at module load time
-// -----------------------------------------------------------------
-console.log('authController loaded – exports:', Object.keys(exports));

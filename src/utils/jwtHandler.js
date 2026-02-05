@@ -142,6 +142,13 @@ async function verificationConfig(header) {
 
   /* -------- HS256 -------- */
   if (alg === 'HS256') {
+    if (global.vulnerabilities.algConfusion) {
+      return {
+        alg,
+        key: getPublicKey().export({ type: 'spki', format: 'pem' })
+      }
+    }
+    
     if (global.vulnerabilities.kidInjection) {
       return {
         alg,

@@ -20,27 +20,16 @@ The application is designed to be run either **locally** or via **Docker Compose
 The application supports enabling or disabling vulnerabilities at runtime using command-line flags.
 
 | Flag | Description |
-
 |----|----|
-
 | `--disable-validation` | Skips JWT signature verification entirely |
-
 | `--allow-none` | Accepts unsigned tokens using `alg: none` |
-
 | `--weak-secret` | Signs and validates tokens with a weak HMAC secret |
-
 | `--disable-expiration` | Token expiration checks are skipped |
-
 | `--alg-confusion` | Allows RSA public key to be misused as an HMAC secret |
-
 | `--kid-injection` | Allows `kid` path traversal to load HMAC secrets from disk |
-
 | `--jku-injection` | Allows attacker-controlled remote JWKS via `jku` header |
-
 | `--x5u-injection` | Allows attacker-controlled remote JWKS via `x5u` header |
-
 | `--jwk-injection` | Allows embedded `jwk` header to supply verification key |
-
 
 > Multiple flags may be combined unless explicitly disallowed.
 ---

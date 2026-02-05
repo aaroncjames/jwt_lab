@@ -6,7 +6,7 @@ This project is a deliberately vulnerable JWT-based authentication application i
 
 It demonstrates a variety of **real-world JWT implementation flaws**, including algorithm confusion, weak secrets, header injection attacks, and improper validation behavior.
 
-This was created to accompany the cheat sheet at https://trustedsec.com/blog/<BLOG URL>
+This was created to accompany the cheat sheet at https://trustedsec.com/blog/keys-to-jwt-assessments-from-a-cheat-sheet-to-a-deep-dive
 
 The application is designed to be run either **locally** or via **Docker Compose**.
 
